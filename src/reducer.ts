@@ -1,7 +1,9 @@
-interface Note {
+import { v4 as uuidv4 } from "uuid";
+
+export interface Note {
   time: number;
   note: string;
-  id: number;
+  id: string;
 }
 
 export const initialState: Note[] | [] = [];
@@ -19,12 +21,12 @@ type ActionAdd = {
 
 type ActionEdit = {
   type: ActionType.EDIT;
-  payload: { id: number; note: string };
+  payload: { id: string; note: string };
 };
 
 type ActionRemove = {
   type: ActionType.REMOVE;
-  payload: { id: number };
+  payload: { id: string };
 };
 
 type Action = ActionAdd | ActionEdit | ActionRemove;
@@ -35,7 +37,7 @@ export const mainReducer = (state: Note[], action: Action): Note[] => {
       const newNote = {
         time: action.payload.freezedTime,
         note: action.payload.note,
-        id: state.length,
+        id: uuidv4(),
       };
 
       return [...state, newNote];
@@ -48,7 +50,9 @@ export const mainReducer = (state: Note[], action: Action): Note[] => {
 
       const editedNote = { ...noteToEdit, note: action.payload.note };
 
-      arr.splice(action.payload.id, 1, editedNote);
+      const idx = state.findIndex((el) => el.id === action.payload.id);
+
+      arr.splice(idx, 1, editedNote);
 
       return [...arr];
     case ActionType.REMOVE:

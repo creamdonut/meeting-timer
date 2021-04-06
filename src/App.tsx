@@ -1,9 +1,9 @@
 import * as React from "react";
-import { useReducer } from "react";
+
 import { useTimer } from "use-timer";
 
 import "./App.css";
-import { ActionType, initialState, mainReducer } from "./reducer";
+import { ActionType, initialState, mainReducer, Note } from "./reducer";
 
 const formattedNumber = (number: number): string => ("0" + number).slice(-2);
 
@@ -20,7 +20,7 @@ const convertSecondsToFormatedTimeString = (time: number): string => {
 export default function App() {
   const { time, reset, start, pause, advanceTime } = useTimer();
 
-  const [state, dispatch] = useReducer(mainReducer, initialState);
+  const [state, dispatch] = React.useReducer(mainReducer, initialState);
 
   const onAddNote = () => {
     dispatch({ type: ActionType.ADD, payload: { freezedTime, note } });
@@ -61,14 +61,14 @@ export default function App() {
     setFreezedTime(time);
   };
 
-  const onRemoveNote = (id: number) => {
+  const onRemoveNote = (id: string) => {
     dispatch({ type: ActionType.REMOVE, payload: { id } });
   };
 
-  const onEditNote = (idx: number) => {
+  const onEditNote = (id: string) => {
     dispatch({
       type: ActionType.EDIT,
-      payload: { id: idx, note: editableNote },
+      payload: { id, note: editableNote },
     });
 
     setNote("");
@@ -129,8 +129,8 @@ export default function App() {
       <div className="mb-3" style={{ fontSize: "1rem" }}>
         <ul className="list-group">
           {state &&
-            state.map((el: { note: string; time: number }, idx) => {
-              return editableNoteIdx === idx.toString() ? (
+            state.map((el: Note, idx) => {
+              return editableNoteIdx === el.id ? (
                 <div key={idx} className="input-group mb-3">
                   <input
                     autoFocus
@@ -142,7 +142,7 @@ export default function App() {
                   />
                   <div className="input-group-append">
                     <button
-                      onClick={() => onEditNote(idx)}
+                      onClick={() => onEditNote(el.id)}
                       className="btn btn-outline-secondary"
                       type="button"
                     >
@@ -156,7 +156,7 @@ export default function App() {
                       Cancel
                     </button>
                     <button
-                      onClick={() => onRemoveNote(idx)}
+                      onClick={() => onRemoveNote(el.id)}
                       className="btn btn-danger"
                       type="button"
                     >
@@ -168,7 +168,7 @@ export default function App() {
                 <li
                   key={idx}
                   onClick={() => {
-                    setEditableNoteIdx(idx.toString());
+                    setEditableNoteIdx(el.id);
                     setEditableNote(el.note);
                   }}
                   className="list-group-item"
