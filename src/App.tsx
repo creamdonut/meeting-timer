@@ -1,7 +1,9 @@
 import * as React from "react";
+import { useReducer } from "react";
 import { useTimer } from "use-timer";
 
 import "./App.css";
+import { ActionType, initialState, mainReducer } from "./reducer";
 
 const formattedNumber = (number: number): string => ("0" + number).slice(-2);
 
@@ -15,17 +17,22 @@ const convertSecondsToFormatedTimeString = (time: number): string => {
   )}:${formattedNumber(seconds)}`;
 };
 
-interface Note {
-  time: number;
-  note: string;
-}
-
 export default function App() {
   const { time, reset, start, pause, advanceTime } = useTimer();
 
+  const [state, dispatch] = useReducer(mainReducer, initialState);
+
+  const onAddNote = () => {
+    dispatch({ type: ActionType.ADD, payload: { freezedTime, note } });
+    setNote("");
+  };
+
   const [additionalTime, setAdditionalTime] = React.useState(0);
   const [note, setNote] = React.useState("");
-  const [notes, setNotes] = React.useState<Note[]>([]);
+
+  const [editableNoteIdx, setEditableNoteIdx] = React.useState("");
+
+  const [editableNote, setEditableNote] = React.useState("");
 
   const [freezedTime, setFreezedTime] = React.useState(0);
 
@@ -50,20 +57,22 @@ export default function App() {
     setNote(e.target.value);
   };
 
-  const addNote = () => {
-    const newNote = {
-      time: freezedTime,
-      note: note,
-    };
-
-    const newNotes = [...notes, newNote];
-    setNotes(newNotes);
-
-    setNote("");
-  };
-
   const focusHandler = () => {
     setFreezedTime(time);
+  };
+
+  const onRemoveNote = (id: number) => {
+    dispatch({ type: ActionType.REMOVE, payload: { id } });
+  };
+
+  const onEditNote = (idx: number) => {
+    dispatch({
+      type: ActionType.EDIT,
+      payload: { id: idx, note: editableNote },
+    });
+
+    setNote("");
+    setEditableNoteIdx("");
   };
 
   return (
@@ -119,13 +128,55 @@ export default function App() {
       <hr />
       <div className="mb-3" style={{ fontSize: "1rem" }}>
         <ul className="list-group">
-          {notes.map((el: { note: React.ReactNode; time: number }, idx) => {
-            return (
-              <li key={idx} className="list-group-item">
-                {convertSecondsToFormatedTimeString(el.time)} : {el.note}
-              </li>
-            );
-          })}
+          {state &&
+            state.map((el: { note: string; time: number }, idx) => {
+              return editableNoteIdx === idx.toString() ? (
+                <div key={idx} className="input-group mb-3">
+                  <input
+                    autoFocus
+                    type="text"
+                    className="form-control"
+                    defaultValue={el.note}
+                    value={editableNote}
+                    onChange={(e) => setEditableNote(e.target.value)}
+                  />
+                  <div className="input-group-append">
+                    <button
+                      onClick={() => onEditNote(idx)}
+                      className="btn btn-outline-secondary"
+                      type="button"
+                    >
+                      Save note
+                    </button>
+                    <button
+                      onClick={() => setEditableNoteIdx("")}
+                      className="btn btn-outline-secondary"
+                      type="button"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => onRemoveNote(idx)}
+                      className="btn btn-danger"
+                      type="button"
+                    >
+                      Remove note
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <li
+                  key={idx}
+                  onClick={() => {
+                    setEditableNoteIdx(idx.toString());
+                    setEditableNote(el.note);
+                  }}
+                  className="list-group-item"
+                >
+                  {convertSecondsToFormatedTimeString(el.time)} : {el.note}
+                </li>
+              );
+            })}
         </ul>
       </div>
 
@@ -137,12 +188,12 @@ export default function App() {
           type="text"
           className="form-control"
           placeholder="Note text"
-          aria-label="Recipient's username"
           aria-describedby="basic-addon2"
+          onKeyDown={(e) => (e.key === "Enter" ? onAddNote() : null)}
         />
         <div className="input-group-append">
           <button
-            onClick={addNote}
+            onClick={onAddNote}
             className="btn btn-outline-secondary"
             type="button"
           >
